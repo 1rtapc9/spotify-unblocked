@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Minimal Spotify Web Player</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; }
+  input { padding: 8px; width: 60%; margin-right: 8px; }
+  button { padding: 8px 12px; }
+  .track { margin-top: 10px; }
+  iframe { margin-top: 5px; display: block; }
+</style>
+</head>
+<body>
+
+<h1>Minimal Spotify Web Player</h1>
+
+<div id="login-container">
+  <a id="login-btn" href="#">Log in with Spotify</a>
+</div>
+
+<div id="search-container" style="display:none;">
+  <input type="text" id="search" placeholder="Search for tracks...">
+  <button onclick="searchTracks()">Search</button>
+  <div id="results"></div>
+</div>
+
+<script>
+const CLIENT_ID = '9049e4208b1c4f81a80a3b03948b30e9';
+const REDIRECT_URI = 'https://spotify-unblocked-api.vercel.app'; // change if deployed elsewhere
+const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';
+const RESPONSE_TYPE = 'token';
+const SCOPES = [
+  'user-read-private',
+  'user-read-email',
+  'playlist-read-private',
+  'user-top-read',
+  'user-read-recently-played'
+].join('%20');
+
+let accessToken = '';
+
+// Set login URL
+document.getElementById('login-btn').href = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=${SCOPES}`;
+
+// Get token from URL hash after login
+window.addEventListener('load', () => {
+  if (window.location.hash) {
+    const hash = window.location.hash.substring(1);
+    const params = new URLSearchParams(hash);
+    accessToken = params.get('access_token');
+    if (accessToken) {
+      document.getElementById('login-container').style.display = 'none';
+      document.getElementById('search-container').style.display = 'block';
+      window.location.hash = '';
+    }
+  }
+});
+
+async function searchTracks() {
+  const query = document.getElementById('search').value;
+  if (!query || !accessToken) return;
+
+  const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  const data = await res.json();
+  const tracks = data.tracks.items;
+
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
+
+  tracks.forEach(track => {
+    const div = document.createElement('div');
+    div.className = 'track';
+    div.innerHTML = `
+      <strong>${track.name}</strong> - ${track.artists[0].name}
+      <iframe src="https://open.spotify.com/embed/track/${track.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    `;
+    resultsDiv.appendChild(div);
+  });
+}
+</script>
+
+</body>
+</html>
