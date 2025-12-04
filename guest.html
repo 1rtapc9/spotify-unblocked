@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guest Mode - Spotify Hub</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/animations.css">
+<script src="js/guest.js" defer></script>
+</head>
+<body>
+<div class="background"></div>
+
+<div class="container">
+  <img src="assets/logo.png" alt="Gray Collegiate Academy" class="logo">
+  <h1>Guest Mode</h1>
+
+  <div class="search-section">
+    <input type="text" id="search-input" placeholder="Search Spotify...">
+    <select id="search-type">
+      <option value="track">Track</option>
+      <option value="album">Album</option>
+      <option value="artist">Artist</option>
+      <option value="playlist">Playlist</option>
+      <option value="show">Podcast</option>
+    </select>
+    <button id="search-btn">Search</button>
+  </div>
+
+  <div id="results"></div>
+</div>
+</body>
+</html>
