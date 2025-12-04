@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Spotify Hub</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <img src="7df92ddb-75e3-404e-917c-ad35fb6c98f6.png" alt="School Logo" class="logo">
+        <h1>Welcome to My Spotify Hub</h1>
+        <div class="buttons">
+            <button id="login-btn">Login with Spotify</button>
+            <button id="guest-btn">Guest Mode</button>
+        </div>
+
+        <!-- Guest Mode Search -->
+        <div id="guest-search" style="display:none;">
+            <input type="text" id="search-input" placeholder="Search Spotify...">
+            <select id="search-type">
+                <option value="track">Track</option>
+                <option value="playlist">Playlist</option>
+                <option value="album">Album</option>
+                <option value="artist">Artist</option>
+                <option value="show">Show</option>
+            </select>
+            <button id="search-btn">Search</button>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
