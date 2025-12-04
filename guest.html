@@ -1,33 +1,56 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Guest Mode - Spotify Hub</title>
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/animations.css">
-<script src="js/guest.js" defer></script>
-</head>
-<body>
-<div class="background"></div>
+document.getElementById('search-btn').addEventListener('click', async () => {
+  const query = document.getElementById('search-input').value;
+  const type = document.getElementById('search-type').value;
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = '';
 
-<div class="container">
-  <img src="assets/logo.png" alt="Gray Collegiate Academy" class="logo">
-  <h1>Guest Mode</h1>
+  if (!query) return;
 
-  <div class="search-section">
-    <input type="text" id="search-input" placeholder="Search Spotify...">
-    <select id="search-type">
-      <option value="track">Track</option>
-      <option value="album">Album</option>
-      <option value="artist">Artist</option>
-      <option value="playlist">Playlist</option>
-      <option value="show">Podcast</option>
-    </select>
-    <button id="search-btn">Search</button>
-  </div>
+  // Use your Spotify token here if desired
+  const token = 'YOUR_SPOTIFY_PUBLIC_TOKEN_HERE'; // replace with valid token
+  const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=10`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  const data = await res.json();
 
-  <div id="results"></div>
-</div>
-</body>
-</html>
+  if (type === 'track') {
+    data.tracks.items.forEach(track => {
+      const div = document.createElement('div');
+      div.className = 'track';
+      div.innerHTML = `<strong>${track.name}</strong> - ${track.artists[0].name}
+      <iframe src="https://open.spotify.com/embed/track/${track.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'playlist') {
+    data.playlists.items.forEach(pl => {
+      const div = document.createElement('div');
+      div.className = 'playlist';
+      div.innerHTML = `<strong>${pl.name}</strong> - ${pl.tracks.total} tracks
+      <iframe src="https://open.spotify.com/embed/playlist/${pl.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'album') {
+    data.albums.items.forEach(album => {
+      const div = document.createElement('div');
+      div.className = 'playlist';
+      div.innerHTML = `<strong>${album.name}</strong> - ${album.artists[0].name}
+      <iframe src="https://open.spotify.com/embed/album/${album.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'artist') {
+    data.artists.items.forEach(artist => {
+      const div = document.createElement('div');
+      div.className = 'artist flex';
+      div.innerHTML = `<img src="${artist.images[0]?.url || ''}" alt="${artist.name}"><strong>${artist.name}</strong>`;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'show') {
+    data.shows.items.forEach(show => {
+      const div = document.createElement('div');
+      div.className = 'playlist';
+      div.innerHTML = `<strong>${show.name}</strong>
+      <iframe src="https://open.spotify.com/embed/show/${show.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>`;
+      resultsDiv.appendChild(div);
+    });
+  }
+});
