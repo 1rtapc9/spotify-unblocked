@@ -3,32 +3,65 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Minimal Spotify Web Player</title>
+<title>Full Spotify Web Hub</title>
 <style>
-  body { font-family: Arial, sans-serif; padding: 20px; }
-  input { padding: 8px; width: 60%; margin-right: 8px; }
-  button { padding: 8px 12px; }
-  .track { margin-top: 10px; }
+  body { font-family: Arial, sans-serif; padding: 20px; max-width: 900px; margin: auto; }
+  input { padding: 6px; width: 60%; margin-right: 8px; }
+  button { padding: 6px 12px; }
+  .section { margin-top: 30px; }
+  .track, .playlist, .artist { margin-bottom: 15px; }
   iframe { margin-top: 5px; display: block; }
+  img { border-radius: 50%; max-width: 80px; margin-right: 10px; vertical-align: middle; }
+  .flex { display: flex; align-items: center; }
 </style>
 </head>
 <body>
 
-<h1>Minimal Spotify Web Player</h1>
+<h1>Spotify Web Hub</h1>
 
 <div id="login-container">
   <a id="login-btn" href="#">Log in with Spotify</a>
 </div>
 
-<div id="search-container" style="display:none;">
-  <input type="text" id="search" placeholder="Search for tracks...">
-  <button onclick="searchTracks()">Search</button>
-  <div id="results"></div>
+<div id="app" style="display:none;">
+  <div class="section" id="profile-section">
+    <h2>Your Profile</h2>
+    <div id="profile-info"></div>
+  </div>
+
+  <div class="section">
+    <h2>Search Spotify</h2>
+    <input type="text" id="search" placeholder="Search tracks, albums, artists, playlists, podcasts">
+    <select id="type">
+      <option value="track">Track</option>
+      <option value="album">Album</option>
+      <option value="artist">Artist</option>
+      <option value="playlist">Playlist</option>
+      <option value="show">Podcast</option>
+    </select>
+    <button onclick="searchSpotify()">Search</button>
+    <div id="search-results"></div>
+  </div>
+
+  <div class="section">
+    <h2>Your Playlists</h2>
+    <div id="playlists"></div>
+  </div>
+
+  <div class="section">
+    <h2>Your Top Tracks</h2>
+    <div id="top-tracks"></div>
+  </div>
+
+  <div class="section">
+    <h2>Your Top Artists</h2>
+    <div id="top-artists"></div>
+  </div>
 </div>
 
 <script>
 const CLIENT_ID = '9049e4208b1c4f81a80a3b03948b30e9';
-const REDIRECT_URI = 'https://spotify-unblocked-api.vercel.app'; // change if deployed elsewhere
+const REDIRECT_URI = 'https://spotify-unblocked-api.vercel.app'; // Change for your deployment
 const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize';
 const RESPONSE_TYPE = 'token';
 const SCOPES = [
@@ -41,10 +74,10 @@ const SCOPES = [
 
 let accessToken = '';
 
-// Set login URL
+// Login URL
 document.getElementById('login-btn').href = `${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=${SCOPES}`;
 
-// Get token from URL hash after login
+// Get token from URL hash
 window.addEventListener('load', () => {
   if (window.location.hash) {
     const hash = window.location.hash.substring(1);
@@ -52,34 +85,138 @@ window.addEventListener('load', () => {
     accessToken = params.get('access_token');
     if (accessToken) {
       document.getElementById('login-container').style.display = 'none';
-      document.getElementById('search-container').style.display = 'block';
+      document.getElementById('app').style.display = 'block';
       window.location.hash = '';
+      loadUserData();
     }
   }
 });
 
-async function searchTracks() {
-  const query = document.getElementById('search').value;
-  if (!query || !accessToken) return;
+// Fetch helper
+async function spotifyFetch(url) {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } });
+  return await res.json();
+}
 
-  const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=10`, {
-    headers: { Authorization: `Bearer ${accessToken}` }
+// Load profile, playlists, top tracks/artists
+async function loadUserData() {
+  // Profile
+  const profile = await spotifyFetch('https://api.spotify.com/v1/me');
+  const profileDiv = document.getElementById('profile-info');
+  profileDiv.innerHTML = `
+    <div class="flex">
+      <img src="${profile.images[0]?.url || ''}" alt="Profile">
+      <div>
+        <strong>${profile.display_name}</strong><br>
+        ${profile.email}
+      </div>
+    </div>
+  `;
+
+  // Playlists
+  const playlistsData = await spotifyFetch('https://api.spotify.com/v1/me/playlists?limit=10');
+  const playlistsDiv = document.getElementById('playlists');
+  playlistsDiv.innerHTML = '';
+  playlistsData.items.forEach(pl => {
+    const div = document.createElement('div');
+    div.className = 'playlist';
+    div.innerHTML = `
+      <strong>${pl.name}</strong> - ${pl.tracks.total} tracks
+      <iframe src="https://open.spotify.com/embed/playlist/${pl.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+    `;
+    playlistsDiv.appendChild(div);
   });
-  const data = await res.json();
-  const tracks = data.tracks.items;
 
-  const resultsDiv = document.getElementById('results');
-  resultsDiv.innerHTML = '';
-
-  tracks.forEach(track => {
+  // Top tracks
+  const topTracks = await spotifyFetch('https://api.spotify.com/v1/me/top/tracks?limit=10');
+  const topTracksDiv = document.getElementById('top-tracks');
+  topTracksDiv.innerHTML = '';
+  topTracks.items.forEach(track => {
     const div = document.createElement('div');
     div.className = 'track';
     div.innerHTML = `
       <strong>${track.name}</strong> - ${track.artists[0].name}
       <iframe src="https://open.spotify.com/embed/track/${track.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
     `;
-    resultsDiv.appendChild(div);
+    topTracksDiv.appendChild(div);
   });
+
+  // Top artists
+  const topArtists = await spotifyFetch('https://api.spotify.com/v1/me/top/artists?limit=10');
+  const topArtistsDiv = document.getElementById('top-artists');
+  topArtistsDiv.innerHTML = '';
+  topArtists.items.forEach(artist => {
+    const div = document.createElement('div');
+    div.className = 'artist flex';
+    div.innerHTML = `
+      <img src="${artist.images[0]?.url || ''}" alt="${artist.name}">
+      <strong>${artist.name}</strong>
+    `;
+    topArtistsDiv.appendChild(div);
+  });
+}
+
+// Search Spotify
+async function searchSpotify() {
+  const query = document.getElementById('search').value;
+  const type = document.getElementById('type').value;
+  if (!query || !accessToken) return;
+
+  const data = await spotifyFetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=${type}&limit=10`);
+  const resultsDiv = document.getElementById('search-results');
+  resultsDiv.innerHTML = '';
+
+  if (type === 'track') {
+    data.tracks.items.forEach(track => {
+      const div = document.createElement('div');
+      div.className = 'track';
+      div.innerHTML = `
+        <strong>${track.name}</strong> - ${track.artists[0].name}
+        <iframe src="https://open.spotify.com/embed/track/${track.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      `;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'album') {
+    data.albums.items.forEach(album => {
+      const div = document.createElement('div');
+      div.className = 'playlist';
+      div.innerHTML = `
+        <strong>${album.name}</strong> - ${album.artists[0].name}
+        <iframe src="https://open.spotify.com/embed/album/${album.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      `;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'playlist') {
+    data.playlists.items.forEach(pl => {
+      const div = document.createElement('div');
+      div.className = 'playlist';
+      div.innerHTML = `
+        <strong>${pl.name}</strong> - ${pl.tracks.total} tracks
+        <iframe src="https://open.spotify.com/embed/playlist/${pl.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      `;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'artist') {
+    data.artists.items.forEach(artist => {
+      const div = document.createElement('div');
+      div.className = 'artist flex';
+      div.innerHTML = `
+        <img src="${artist.images[0]?.url || ''}" alt="${artist.name}">
+        <strong>${artist.name}</strong>
+      `;
+      resultsDiv.appendChild(div);
+    });
+  } else if (type === 'show') {
+    data.shows.items.forEach(show => {
+      const div = document.createElement('div');
+      div.className = 'playlist';
+      div.innerHTML = `
+        <strong>${show.name}</strong>
+        <iframe src="https://open.spotify.com/embed/show/${show.id}" width="300" height="80" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"></iframe>
+      `;
+      resultsDiv.appendChild(div);
+    });
+  }
 }
 </script>
 
